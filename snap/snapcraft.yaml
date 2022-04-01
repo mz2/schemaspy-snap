@@ -63,7 +63,6 @@ layout:
 apps:
   schemaspy:
     command: "bin/launch-schemaspy.sh"
-    alias: schemaspy
     plugs: [home, network]
     environment:
       JAVA_HOME: $SNAP/usr/lib/jvm/java-8-openjdk-${SNAPCRAFT_TARGET_ARCH}
