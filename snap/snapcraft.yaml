@@ -1,11 +1,15 @@
-name: schemaspy
+name: mz2-schemaspy
+type: app
 base: core20
 version: "6.1.0"
+contact: matias.piipari@gmail.com
+title: schemaspy
+source-code: https://github.com/mz2/schemaspy-snap
 summary: Document your database simply and easily
 description: |
   Do you hate starting on a new project and having to try to figure out someone else’s idea of a database? Or are you in QA and the developers expect you to understand all the relationships in their schema? If so then this tool’s for you.
 
-grade: devel # must be 'stable' to release into candidate/stable channels
+grade: stable
 confinement: strict
 
 parts:
@@ -59,6 +63,7 @@ layout:
 apps:
   schemaspy:
     command: "bin/launch-schemaspy.sh"
+    alias: schemaspy
     plugs: [home, network]
     environment:
       JAVA_HOME: $SNAP/usr/lib/jvm/java-8-openjdk-${SNAPCRAFT_TARGET_ARCH}
