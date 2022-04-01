@@ -1,0 +1,69 @@
+name: schemaspy
+base: core20
+version: "6.1.0"
+summary: Document your database simply and easily
+description: |
+  Do you hate starting on a new project and having to try to figure out someone else’s idea of a database? Or are you in QA and the developers expect you to understand all the relationships in their schema? If so then this tool’s for you.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict
+
+parts:
+  schemaspy:
+    plugin: dump
+    source: https://github.com/schemaspy/schemaspy.git
+    source-type: git
+    source-tag: "v${SNAPCRAFT_PROJECT_VERSION}"
+    build-environment:
+      # the version strings picked up from https://github.com/schemaspy/schemaspy/blob/master/Dockerfile
+      - MYSQL_VERSION: 8.0.28
+      - MARIADB_VERSION: 1.1.10
+      - POSTGRESQL_VERSION: 42.2.25
+      - JTDS_VERSION: 1.3.1
+    build-packages:
+      - openjdk-8-jdk
+      - curl
+    override-build: |
+      mkdir -p ${SNAPCRAFT_PART_INSTALL}/jar
+
+      # first build the package & copy it in place
+      ./mvnw package -DskipTests
+      cp ./target/schemaspy-${SNAPCRAFT_PROJECT_VERSION}.jar ${SNAPCRAFT_PART_INSTALL}/jar/schemaspy.jar
+
+      # then download the JDBC driver dependencies
+      # the download URLs picked up from https://github.com/schemaspy/schemaspy/blob/master/Dockerfile
+
+      curl -L http://search.maven.org/remotecontent?filepath=mysql/mysql-connector-java/$MYSQL_VERSION/mysql-connector-java-$MYSQL_VERSION.jar -o ${SNAPCRAFT_PART_INSTALL}/jar/mysql-connector-java-$MYSQL_VERSION.jar
+      curl -L http://search.maven.org/remotecontent?filepath=org/mariadb/jdbc/mariadb-java-client/$MARIADB_VERSION/mariadb-java-client-$MARIADB_VERSION.jar -o ${SNAPCRAFT_PART_INSTALL}/jar/mariadb-java-client-$MARIADB_VERSION.jar
+      curl -L http://search.maven.org/remotecontent?filepath=org/postgresql/postgresql/$POSTGRESQL_VERSION.jre7/postgresql-$POSTGRESQL_VERSION.jre7.jar -o ${SNAPCRAFT_PART_INSTALL}/jar/postgresql-$POSTGRESQL_VERSION.jre7.jar
+      curl -L http://search.maven.org/remotecontent?filepath=net/sourceforge/jtds/jtds/$JTDS_VERSION/jtds-$JTDS_VERSION.jar -o ${SNAPCRAFT_PART_INSTALL}/jar/jtds-$JTDS_VERSION.jar
+    organize:
+      "./target/schemaspy.jar": jar/
+  schemaspy-launcher:
+    plugin: dump
+    source: ./launcher
+    stage-packages:
+      - openjdk-8-jre
+      - graphviz
+      - fonts-ubuntu
+      - ttf-ubuntu-font-family
+      - fontconfig
+      - fontconfig-config
+    organize:
+      "./launch-schemaspy.sh": bin/
+layout:
+  /usr/share/schemaspy/drivers:
+    symlink: $SNAP/jar
+  /usr/bin/dot:
+    symlink: $SNAP/usr/bin/dot
+apps:
+  schemaspy:
+    command: "bin/launch-schemaspy.sh"
+    plugs: [home, network]
+    environment:
+      JAVA_HOME: $SNAP/usr/lib/jvm/java-8-openjdk-${SNAPCRAFT_TARGET_ARCH}
+      CLASSPATH: $SNAP/jar/schemaspy.jar
+      # the following needed for fontconfig, as per https://askubuntu.com/a/791887/1469723
+      XDG_DATA_HOME: $SNAP/usr/share
+      FONTCONFIG_PATH: $SNAP/etc/fonts/config.d
+      FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
